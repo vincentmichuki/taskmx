@@ -1,7 +1,8 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, FormEvent } from "react";
 import { useRouter } from "next/router";
-import axios from 'axios';
-import { persistUserData } from "@/utils/utils";
+import { persistUserData } from "@/src/utils/utils";
+import { RegisterForm } from "../types/types";
+import { BASE_URL } from "@/src/utils/constants";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -9,33 +10,39 @@ export default function LoginPage() {
 
   const router = useRouter()
 
-  const handleLogin = async (e: React.SyntheticEvent) => {
-    e.preventDefault()
+  const handleSignUp = async (e: FormEvent<RegisterForm>) => {
+    e.preventDefault();
     try {
       setLoading(true);
       setWrongCredentials(false);
+
       // Get data from the form.
-      const target = e.target as typeof e.target & {
-        username: { value: string };
-        email: { value: string };
-        password: { value: string };
-      };
+      const form = e.currentTarget.elements;
+
       const data = {
-        username: target.username.value,
-        email: target.email.value,
-        password: target.password.value,
+        username: form.username.value,
+        email: form.email.value,
+        password: form.password.value,
       }
+
+      console.log(data);
 
       // Send the data to the server in JSON format.
       const JSONdata = JSON.stringify(data)
 
       // API endpoint where we send form data.
 
-      const response = await axios.post('/register', { data: data});
+      const response = await fetch(`${BASE_URL}register/`, {
+        method: 'POST',
+        body: JSONdata,
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
       setLoading(false);
 
       // Get the response data from server as JSON.
-      const result = await response.data;
+      const result = await response.json();
 
       persistUserData(result);
       // navigate to dashboard
@@ -55,7 +62,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" action="#" method="POST">
+          <form className="space-y-6" onSubmit={handleSignUp}>
             <div>
               <label htmlFor="username" className="block text-sm font-medium leading-6 text-gray-900">
                 Username
@@ -111,9 +118,13 @@ export default function LoginPage() {
                 type="submit"
                 className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
-                Sign up
+                {loading ? 'Please wait ...' : 'Sign in'}
               </button>
             </div>
+            {
+              wrongCredials &&
+              <p className="text-[red] text-sm">Invalid email or password. Try again</p>
+            }
           </form>
         </div>
       </div>

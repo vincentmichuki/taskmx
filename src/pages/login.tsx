@@ -1,42 +1,45 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, FormEvent } from "react";
 import { useRouter } from "next/router";
-import axios from 'axios';
-import { persistUserData } from "@/utils/utils";
+import { persistUserData } from "@/src/utils/utils";
+import { LoginForm } from "../types/types";
+import { BASE_URL } from "@/src/utils/constants";
+
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [wrongCredials, setWrongCredentials] = useState(false);
 
-    const router = useRouter()
+    const router = useRouter();
 
-    const handleLogin = async (e: React.SyntheticEvent) => {
-        e.preventDefault()
+    const handleLogin = async (e: FormEvent<LoginForm>) => {
+        e.preventDefault();
         try {
             setLoading(true);
             setWrongCredentials(false);
             // Get data from the form.
-            const target = e.target as typeof e.target & {
-                email: { value: string };
-                password: { value: string };
-            };
+            const form = e.currentTarget.elements;
+
             const data = {
-                username: target.email.value,
-                password: target.password.value,
+                username: form.username.value,
+                password: form.password.value,
             }
 
             // Send the data to the server in JSON format.
             const JSONdata = JSON.stringify(data)
 
-            // API endpoint where we send form data.
-
-            const response = await axios.post('/login', { data: data});
+            const response = await fetch(`${BASE_URL}login/`, {
+                method: 'POST',
+                body: JSONdata,
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
             setLoading(false);
-            console.log(response)
 
             // Get the response data from server as JSON.
-            const result = await response.data;
-            console.log(result);
-            if (JSON.stringify(result).includes('Incorrect credentials')) {
+            const result = await response.json();
+            
+            if (JSON.stringify(result).includes('Invalid username or password')) {
                 setWrongCredentials(true);
             } else {
                 persistUserData(result);
@@ -104,7 +107,7 @@ export default function LoginPage() {
                         </div>
                         {
                             wrongCredials &&
-                            <p className="text-[red] text-sm">Invalid email or password</p>
+                            <p className="text-[red] text-sm">Invalid email or password. Try again</p>
                         }
                     </form>
                 </div>
